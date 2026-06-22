@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cafe Monthly Pass</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #1a1d24;
+    --border: #2a2e38;
+    --text: #e8e9ed;
+    --muted: #8b8f9a;
+    --accent: #5b8cff;
+    --accent-hover: #4a7af0;
+    --green: #3ecf8e;
+    --red: #ff5c5c;
+    --yellow: #f0b34d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
+  }
+  .container { max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 1.3rem; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  .tab-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  .panel {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .panel.active { display: block; }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #11141a;
+    color: var(--text);
+    font-size: 1rem;
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+
+  button.primary {
+    width: 100%;
+    margin-top: 18px;
+    padding: 13px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.primary:hover { background: var(--accent-hover); }
+  button.primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  .result-box {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 8px;
+    background: #11141a;
+    border: 1px solid var(--border);
+    font-size: 0.9rem;
+    display: none;
+  }
+  .result-box.show { display: block; }
+  .result-box.error { border-color: var(--red); color: var(--red); }
+  .result-box.success { border-color: var(--green); }
+
+  .player-card {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 8px;
+    background: #11141a;
+    border: 1px solid var(--border);
+    display: none;
+  }
+  .player-card.show { display: block; }
+  .player-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.9rem; }
+  .player-row .label { color: var(--muted); }
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .status-active { background: rgba(62,207,142,0.15); color: var(--green); }
+  .status-expired { background: rgba(255,92,92,0.15); color: var(--red); }
+  .status-nohours { background: rgba(240,179,77,0.15); color: var(--yellow); }
+
+  .search-results {
+    margin-top: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: none;
+  }
+  .search-results.show { display: block; }
+  .search-result-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item:hover { background: #20242e; }
+  .search-result-item .name { font-weight: 600; }
+  .search-result-item .meta { color: var(--muted); font-size: 0.78rem; }
+
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .config-warning {
+    background: rgba(255,92,92,0.1);
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .config-warning.show { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🎮 Cafe Monthly Pass</h1>
+  <p class="subtitle">Manage passes and track play hours</p>
+
+  <div class="config-warning" id="configWarning">
+    ⚠️ Sheet URL not configured. This deployed build is missing its backend URL — check the GitHub Actions deployment.
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="new">New / Renew</button>
+    <button class="tab-btn" data-tab="visit">Record Visit</button>
+  </div>
+
+  <!-- NEW / RENEW PANEL -->
+  <div class="panel active" id="panel-new">
+    <label for="newName">Player Name</label>
+    <input type="text" id="newName" placeholder="e.g. Rahul Sharma">
+
+    <label for="newPhone">Phone Number</label>
+    <input type="tel" id="newPhone" placeholder="e.g. 9876543210">
+
+    <label for="newHours">Hours to Allot</label>
+    <input type="number" id="newHours" placeholder="e.g. 20" value="20">
+
+    <button class="primary" id="createBtn">Create / Renew Pass</button>
+
+    <div class="result-box" id="newResult"></div>
+  </div>
+
+  <!-- RECORD VISIT PANEL -->
+  <div class="panel" id="panel-visit">
+    <label for="searchInput">Search by Name or Phone</label>
+    <input type="text" id="searchInput" placeholder="Start typing...">
+    <div class="search-results" id="searchResults"></div>
+
+    <div class="player-card" id="playerCard">
+      <div class="player-row"><span class="label">Name</span><span id="pcName">-</span></div>
+      <div class="player-row"><span class="label">Phone</span><span id="pcPhone">-</span></div>
+      <div class="player-row"><span class="label">Hours Remaining</span><span id="pcHours">-</span></div>
+      <div class="player-row"><span class="label">Expires</span><span id="pcExpiry">-</span></div>
+      <div class="player-row"><span class="label">Status</span><span id="pcStatus">-</span></div>
+
+      <label for="hoursPlayed">Hours Played Today</label>
+      <input type="number" id="hoursPlayed" placeholder="e.g. 2" step="0.5">
+
+      <button class="primary" id="deductBtn">Deduct Hours</button>
+    </div>
+
+    <div class="result-box" id="visitResult"></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
