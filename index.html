@@ -170,9 +170,57 @@
     display: none;
   }
   .config-warning.show { display: block; }
+
+  /* Lock screen */
+  #lockScreen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  #lockScreen.hidden { display: none; }
+  .lock-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+  }
+  .lock-box h2 { margin: 0 0 4px; font-size: 1.1rem; }
+  .lock-box p { color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; }
+  #pinInput {
+    text-align: center;
+    font-size: 1.4rem;
+    letter-spacing: 6px;
+    padding: 12px;
+  }
+  #pinError {
+    color: var(--red);
+    font-size: 0.85rem;
+    margin-top: 10px;
+    min-height: 18px;
+  }
+  #mainApp.hidden { display: none; }
 </style>
 </head>
 <body>
+
+<div id="lockScreen">
+  <div class="lock-box">
+    <h2>🔒 Staff Access</h2>
+    <p>Enter the 6-digit PIN to continue</p>
+    <input type="password" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="off">
+    <button class="primary" id="pinSubmit">Unlock</button>
+    <div id="pinError"></div>
+  </div>
+</div>
+
+<div id="mainApp" class="hidden">
 <div class="container">
   <h1>🎮 Cafe Monthly Pass</h1>
   <p class="subtitle">Manage passes and track play hours</p>
@@ -223,6 +271,7 @@
 
     <div class="result-box" id="visitResult"></div>
   </div>
+</div>
 </div>
 
 <script src="config.js"></script>

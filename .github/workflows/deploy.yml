@@ -24,9 +24,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Inject Sheet URL secret into config.js
+      - name: Inject secrets into config.js
         run: |
           echo "window.SHEET_API_URL = \"${{ secrets.MONTHLY_PASS_SHEET_URL }}\";" > config.js
+          echo "window.APP_PIN = \"${{ secrets.PIN_MONTHLY_PASS }}\";" >> config.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

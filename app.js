@@ -1,6 +1,56 @@
 // app.js — talks to the Apps Script backend defined in config.js (SHEET_API_URL)
 
 document.addEventListener("DOMContentLoaded", () => {
+  setupLockScreen();
+});
+
+function setupLockScreen() {
+  const lockScreen = document.getElementById("lockScreen");
+  const mainApp = document.getElementById("mainApp");
+  const pinInput = document.getElementById("pinInput");
+  const pinSubmit = document.getElementById("pinSubmit");
+  const pinError = document.getElementById("pinError");
+
+  const SESSION_KEY = "cafePassUnlocked";
+
+  function unlock() {
+    lockScreen.classList.add("hidden");
+    mainApp.classList.remove("hidden");
+    initMainApp();
+  }
+
+  // Stay unlocked for the rest of this browser tab session (cleared on tab close)
+  if (sessionStorage.getItem(SESSION_KEY) === "yes") {
+    unlock();
+    return;
+  }
+
+  function tryUnlock() {
+    const entered = pinInput.value.trim();
+    const correctPin = window.APP_PIN;
+
+    if (!correctPin || correctPin.includes("PLACEHOLDER")) {
+      pinError.textContent = "PIN not configured on this deployment.";
+      return;
+    }
+    if (entered === correctPin) {
+      sessionStorage.setItem(SESSION_KEY, "yes");
+      unlock();
+    } else {
+      pinError.textContent = "Incorrect PIN. Try again.";
+      pinInput.value = "";
+      pinInput.focus();
+    }
+  }
+
+  pinSubmit.addEventListener("click", tryUnlock);
+  pinInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") tryUnlock();
+  });
+  pinInput.focus();
+}
+
+function initMainApp() {
   if (!window.SHEET_API_URL || window.SHEET_API_URL.includes("PLACEHOLDER")) {
     document.getElementById("configWarning").classList.add("show");
   }
@@ -8,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupTabs();
   setupCreatePass();
   setupVisitSearch();
-});
+}
 
 function setupTabs() {
   const tabBtns = document.querySelectorAll(".tab-btn");
