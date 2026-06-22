@@ -2,7 +2,18 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   setupLockScreen();
+  setupPhoneInputFilter();
 });
+
+// Strips any non-digit character as it's typed, so staff can never accidentally
+// enter spaces, dashes, or a "+91" prefix into the phone field.
+function setupPhoneInputFilter() {
+  const phoneInput = document.getElementById("newPhone");
+  if (!phoneInput) return;
+  phoneInput.addEventListener("input", () => {
+    phoneInput.value = phoneInput.value.replace(/\D/g, "").slice(0, 10);
+  });
+}
 
 function setupLockScreen() {
   const lockScreen = document.getElementById("lockScreen");
@@ -105,8 +116,8 @@ function setupCreatePass() {
       showResultBox(resultBox, "Please fill in name, phone, and hours.", "error");
       return;
     }
-    if (!/^\d{7,15}$/.test(phone.replace(/\D/g, ""))) {
-      showResultBox(resultBox, "Please enter a valid phone number.", "error");
+    if (!/^[1-9]\d{9}$/.test(phone)) {
+      showResultBox(resultBox, "Phone number must be exactly 10 digits, starting with 6-9 (no country code, no leading 0).", "error");
       return;
     }
 
