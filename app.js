@@ -21,6 +21,7 @@ function setupLockScreen() {
   const pinInput = document.getElementById("pinInput");
   const pinSubmit = document.getElementById("pinSubmit");
   const pinError = document.getElementById("pinError");
+  const logoutBtn = document.getElementById("logoutBtn");
 
   const SESSION_KEY = "cafePassUnlocked";
 
@@ -28,6 +29,19 @@ function setupLockScreen() {
     lockScreen.classList.add("hidden");
     mainApp.classList.remove("hidden");
     initMainApp();
+  }
+
+  function lock() {
+    sessionStorage.removeItem(SESSION_KEY);
+    mainApp.classList.add("hidden");
+    lockScreen.classList.remove("hidden");
+    pinInput.value = "";
+    pinError.textContent = "";
+    pinInput.focus();
+  }
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", lock);
   }
 
   // Stay unlocked for the rest of this browser tab session (cleared on tab close)
@@ -116,7 +130,7 @@ function setupCreatePass() {
       showResultBox(resultBox, "Please fill in name, phone, and hours.", "error");
       return;
     }
-    if (!/^[1-9]\d{9}$/.test(phone)) {
+    if (!/^[6-9]\d{9}$/.test(phone)) {
       showResultBox(resultBox, "Phone number must be exactly 10 digits, starting with 6-9 (no country code, no leading 0).", "error");
       return;
     }

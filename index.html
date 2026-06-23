@@ -206,6 +206,28 @@
     min-height: 18px;
   }
   #mainApp.hidden { display: none; }
+
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  #logoutBtn {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  #logoutBtn:hover {
+    border-color: var(--red);
+    color: var(--red);
+  }
 </style>
 </head>
 <body>
@@ -222,8 +244,13 @@
 
 <div id="mainApp" class="hidden">
 <div class="container">
-  <h1>🎮 Cafe Monthly Pass</h1>
-  <p class="subtitle">Manage passes and track play hours</p>
+  <div class="app-header">
+    <div>
+      <h1>🎮 Cafe Monthly Pass</h1>
+      <p class="subtitle">Manage passes and track play hours</p>
+    </div>
+    <button id="logoutBtn" title="Logout">Logout</button>
+  </div>
 
   <div class="config-warning" id="configWarning">
     ⚠️ Sheet URL not configured. This deployed build is missing its backend URL — check the GitHub Actions deployment.
