@@ -8,7 +8,10 @@ document.addEventListener("DOMContentLoaded", () => {
   setupPhoneInputFilter();
 });
 
-// Builds a wa.me link that opens WhatsApp with a pre-filled message to the given phone number.
+// Generates a random 4-digit OTP as a string (e.g. "0427"), zero-padded.
+function generateOtp() {
+  return String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+}
 // phone must be a 10-digit Indian number (no country code) - we add 91 here for the wa.me format.
 function buildWhatsAppLink(phone, message) {
   const fullPhone = "91" + phone;
@@ -141,10 +144,23 @@ function setLoading(button, isLoading, label) {
 
 // ---------- NEW / RENEW PASS ----------
 function setupCreatePass() {
-  const createBtn = document.getElementById("createBtn");
+  const sendOtpBtn = document.getElementById("newSendOtpBtn");
+  const otpBox = document.getElementById("newOtpBox");
+  const otpInput = document.getElementById("newOtpInput");
+  const verifyBtn = document.getElementById("newVerifyBtn");
+  const cancelBtn = document.getElementById("newCancelOtpBtn");
   const resultBox = document.getElementById("newResult");
 
-  createBtn.addEventListener("click", async () => {
+  let pendingOtp = null;
+
+  function resetOtpState() {
+    pendingOtp = null;
+    otpBox.classList.remove("show");
+    otpInput.value = "";
+    sendOtpBtn.disabled = false;
+  }
+
+  sendOtpBtn.addEventListener("click", () => {
     const name = document.getElementById("newName").value.trim();
     const phone = document.getElementById("newPhone").value.trim();
     const hours = document.getElementById("newHours").value.trim();
@@ -158,7 +174,42 @@ function setupCreatePass() {
       return;
     }
 
-    setLoading(createBtn, true);
+    pendingOtp = generateOtp();
+    const message =
+      `Hi ${name}! 🎮 Your verification code from ${CAFE_NAME} is:\n\n` +
+      `*${pendingOtp}*\n\n` +
+      `Please share this code with the staff to confirm your pass.`;
+    window.open(buildWhatsAppLink(phone, message), "_blank", "noopener,noreferrer");
+
+    otpBox.classList.add("show");
+    otpInput.value = "";
+    otpInput.focus();
+    showResultBox(resultBox, "OTP sent. Ask the customer for the code and enter it below.", "success");
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    resetOtpState();
+    resultBox.classList.remove("show");
+  });
+
+  verifyBtn.addEventListener("click", async () => {
+    const entered = otpInput.value.trim();
+    if (!pendingOtp) {
+      showResultBox(resultBox, "Please send an OTP first.", "error");
+      return;
+    }
+    if (entered !== pendingOtp) {
+      showResultBox(resultBox, "❌ Incorrect code. Please check with the customer and try again.", "error");
+      otpInput.value = "";
+      otpInput.focus();
+      return;
+    }
+
+    const name = document.getElementById("newName").value.trim();
+    const phone = document.getElementById("newPhone").value.trim();
+    const hours = document.getElementById("newHours").value.trim();
+
+    setLoading(verifyBtn, true);
     try {
       const data = await callApi({ action: "createPass", name, phone, hours });
       if (data.success) {
@@ -177,6 +228,7 @@ function setupCreatePass() {
         document.getElementById("newName").value = "";
         document.getElementById("newPhone").value = "";
         document.getElementById("newHours").value = "20";
+        resetOtpState();
       } else {
         showResultBox(resultBox, "❌ " + data.error, "error");
         document.getElementById("newWhatsappBtn").innerHTML = "";
@@ -184,7 +236,7 @@ function setupCreatePass() {
     } catch (err) {
       showResultBox(resultBox, "❌ Could not reach server: " + err.message, "error");
     } finally {
-      setLoading(createBtn, false, "Create / Renew Pass");
+      setLoading(verifyBtn, false, "Verify &amp; Create Pass");
     }
   });
 }
@@ -194,17 +246,29 @@ function setupVisitSearch() {
   const searchInput = document.getElementById("searchInput");
   const searchResults = document.getElementById("searchResults");
   const playerCard = document.getElementById("playerCard");
-  const deductBtn = document.getElementById("deductBtn");
+  const sendOtpBtn = document.getElementById("visitSendOtpBtn");
+  const otpBox = document.getElementById("visitOtpBox");
+  const otpInput = document.getElementById("visitOtpInput");
+  const verifyBtn = document.getElementById("visitVerifyBtn");
+  const cancelBtn = document.getElementById("visitCancelOtpBtn");
   const visitResult = document.getElementById("visitResult");
 
   let selectedPhone = null;
   let debounceTimer = null;
+  let pendingOtp = null;
+
+  function resetOtpState() {
+    pendingOtp = null;
+    otpBox.classList.remove("show");
+    otpInput.value = "";
+  }
 
   searchInput.addEventListener("input", () => {
     const query = searchInput.value.trim();
     playerCard.classList.remove("show");
     visitResult.classList.remove("show");
     document.getElementById("visitWhatsappBtn").innerHTML = "";
+    resetOtpState();
 
     if (debounceTimer) clearTimeout(debounceTimer);
     if (query.length < 2) {
@@ -270,13 +334,14 @@ function setupVisitSearch() {
       statusEl.innerHTML = `<span class="status-badge ${statusClass}">${data.status}</span>`;
 
       playerCard.classList.add("show");
-      deductBtn.disabled = data.status === "Expired";
+      sendOtpBtn.disabled = data.status === "Expired";
+      resetOtpState();
     } catch (err) {
       showResultBox(visitResult, "❌ Could not reach server: " + err.message, "error");
     }
   }
 
-  deductBtn.addEventListener("click", async () => {
+  sendOtpBtn.addEventListener("click", () => {
     const hoursPlayed = document.getElementById("hoursPlayed").value.trim();
     if (!selectedPhone) return;
     if (!hoursPlayed || parseFloat(hoursPlayed) <= 0) {
@@ -284,7 +349,41 @@ function setupVisitSearch() {
       return;
     }
 
-    setLoading(deductBtn, true);
+    const name = document.getElementById("pcName").textContent;
+    pendingOtp = generateOtp();
+    const message =
+      `Hi ${name}! 🎮 Your verification code from ${CAFE_NAME} is:\n\n` +
+      `*${pendingOtp}*\n\n` +
+      `Please share this code with the staff to confirm your hours.`;
+    window.open(buildWhatsAppLink(selectedPhone, message), "_blank", "noopener,noreferrer");
+
+    otpBox.classList.add("show");
+    otpInput.value = "";
+    otpInput.focus();
+    showResultBox(visitResult, "OTP sent. Ask the customer for the code and enter it below.", "success");
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    resetOtpState();
+    visitResult.classList.remove("show");
+  });
+
+  verifyBtn.addEventListener("click", async () => {
+    const entered = otpInput.value.trim();
+    if (!pendingOtp) {
+      showResultBox(visitResult, "Please send an OTP first.", "error");
+      return;
+    }
+    if (entered !== pendingOtp) {
+      showResultBox(visitResult, "❌ Incorrect code. Please check with the customer and try again.", "error");
+      otpInput.value = "";
+      otpInput.focus();
+      return;
+    }
+
+    const hoursPlayed = document.getElementById("hoursPlayed").value.trim();
+
+    setLoading(verifyBtn, true);
     try {
       const data = await callApi({ action: "deductHours", phone: selectedPhone, hoursPlayed });
       if (data.success) {
@@ -305,6 +404,7 @@ function setupVisitSearch() {
         renderWhatsAppButton(document.getElementById("visitWhatsappBtn"), selectedPhone, waMessage);
 
         document.getElementById("hoursPlayed").value = "";
+        resetOtpState();
         loadPlayer(selectedPhone); // refresh card with updated balance
       } else {
         showResultBox(visitResult, "❌ " + data.error, "error");
@@ -313,7 +413,7 @@ function setupVisitSearch() {
     } catch (err) {
       showResultBox(visitResult, "❌ Could not reach server: " + err.message, "error");
     } finally {
-      setLoading(deductBtn, false, "Deduct Hours");
+      setLoading(verifyBtn, false, "Verify &amp; Deduct Hours");
     }
   });
 }
