@@ -1,9 +1,32 @@
 // app.js — talks to the Apps Script backend defined in config.js (SHEET_API_URL)
 
+// Change this to your actual cafe name — used in WhatsApp messages sent to customers.
+const CAFE_NAME = "VR GAMING ADDA";
+
 document.addEventListener("DOMContentLoaded", () => {
   setupLockScreen();
   setupPhoneInputFilter();
 });
+
+// Builds a wa.me link that opens WhatsApp with a pre-filled message to the given phone number.
+// phone must be a 10-digit Indian number (no country code) - we add 91 here for the wa.me format.
+function buildWhatsAppLink(phone, message) {
+  const fullPhone = "91" + phone;
+  return `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`;
+}
+
+// Renders a "Send via WhatsApp" button inside the given container element.
+// Replaces any existing button in that container so repeated actions don't stack buttons.
+function renderWhatsAppButton(container, phone, message) {
+  container.innerHTML = "";
+  const btn = document.createElement("a");
+  btn.href = buildWhatsAppLink(phone, message);
+  btn.target = "_blank";
+  btn.rel = "noopener noreferrer";
+  btn.className = "whatsapp-btn";
+  btn.textContent = "📩 Send via WhatsApp";
+  container.appendChild(btn);
+}
 
 // Strips any non-digit character as it's typed, so staff can never accidentally
 // enter spaces, dashes, or a "+91" prefix into the phone field.
@@ -144,11 +167,19 @@ function setupCreatePass() {
           `✅ Pass created for ${data.name} (ID: ${data.displayId})\nHours: ${data.hoursRemaining} | Expires: ${data.expiryDate}`,
           "success"
         );
+        const message =
+          `Hi ${data.name}! 🎮 Thanks for choosing ${CAFE_NAME}.\n\n` +
+          `Your monthly pass has been activated:\n` +
+          `• Hours: ${data.hoursRemaining}\n` +
+          `• Expires: ${data.expiryDate}\n\n` +
+          `Keep this message as your record. See you soon!`;
+        renderWhatsAppButton(document.getElementById("newWhatsappBtn"), data.phone, message);
         document.getElementById("newName").value = "";
         document.getElementById("newPhone").value = "";
         document.getElementById("newHours").value = "20";
       } else {
         showResultBox(resultBox, "❌ " + data.error, "error");
+        document.getElementById("newWhatsappBtn").innerHTML = "";
       }
     } catch (err) {
       showResultBox(resultBox, "❌ Could not reach server: " + err.message, "error");
@@ -173,6 +204,7 @@ function setupVisitSearch() {
     const query = searchInput.value.trim();
     playerCard.classList.remove("show");
     visitResult.classList.remove("show");
+    document.getElementById("visitWhatsappBtn").innerHTML = "";
 
     if (debounceTimer) clearTimeout(debounceTimer);
     if (query.length < 2) {
@@ -261,10 +293,22 @@ function setupVisitSearch() {
           msg += `\n⚠️ Overflow: ${data.overflowHours} hrs beyond pass — charge ₹${data.overflowCharge} extra.`;
         }
         showResultBox(visitResult, msg, "success");
+
+        let waMessage =
+          `Hi ${data.name}! 🎮 Visit summary from ${CAFE_NAME}:\n\n` +
+          `• Hours played today: ${data.hoursPlayed}\n` +
+          `• Hours remaining on your pass: ${data.hoursRemainingAfter}\n`;
+        if (data.overflowHours > 0) {
+          waMessage += `• Extra hours beyond pass: ${data.overflowHours} (charged ₹${data.overflowCharge})\n`;
+        }
+        waMessage += `\nKeep this message as your record. Thanks for visiting!`;
+        renderWhatsAppButton(document.getElementById("visitWhatsappBtn"), selectedPhone, waMessage);
+
         document.getElementById("hoursPlayed").value = "";
         loadPlayer(selectedPhone); // refresh card with updated balance
       } else {
         showResultBox(visitResult, "❌ " + data.error, "error");
+        document.getElementById("visitWhatsappBtn").innerHTML = "";
       }
     } catch (err) {
       showResultBox(visitResult, "❌ Could not reach server: " + err.message, "error");
